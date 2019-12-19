@@ -2,10 +2,10 @@
 
 namespace App\Infrastructure\Shared\Fixture;
 
-use App\Document\Language;
-use App\Document\League;
-use App\Document\Sport;
-use App\Document\Team;
+use App\Domain\Game\Language;
+use App\Domain\Game\League;
+use App\Domain\Game\Sport;
+use App\Domain\Game\Team;
 use Doctrine\Bundle\MongoDBBundle\Fixture\Fixture;
 use Doctrine\Common\Persistence\ObjectManager;
 

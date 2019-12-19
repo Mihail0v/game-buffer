@@ -9,13 +9,15 @@ use App\Domain\Game\Repository\LanguageRepository;
 use App\Domain\Game\Repository\LeagueRepository;
 use App\Domain\Game\Repository\SportRepository;
 use App\Domain\Game\Repository\TeamRepository;
-use DateTimeImmutable;
+use App\Infrastructure\Game\DTO\GameDTO;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Serializer\SerializerInterface;
 
-class CreateGameController extends AbstractController
+final class CreateGameController extends AbstractController
 {
     private LanguageRepository $languageRepository;
     private SportRepository $sportRepository;
@@ -39,43 +41,25 @@ class CreateGameController extends AbstractController
 
     /**
      * @Route("create")
-     * @throws NotFoundException
+     * @param Request $request
+     * @param SerializerInterface $normalizer
+     * @return JsonResponse
      */
-    public function __invoke()
+    public function __invoke(Request $request, SerializerInterface $normalizer)
     {
-        $requests = [
-            [
-                'language' => 'русский',
-                'sport' => 'хоккей',
-                'league' => 'лига уефа',
-                'firstTeam' => 'реал',
-                'secondTeam' => 'барса',
-            ],
-            [
-                'language' => 'русский',
-                'sport' => 'хоккей',
-                'league' => 'лига уефа',
-                'firstTeam' => 'реал',
-                'secondTeam' => 'барса',
-            ],
-            [
-                'language' => 'русский',
-                'sport' => 'хоккей',
-                'league' => 'лига уефа',
-                'firstTeam' => 'реал',
-                'secondTeam' => 'барса',
-            ],
-        ];
+        /** @var GameDTO[] $data */
+        $data = $normalizer->deserialize($request->getContent(), GameDTO::class . '[]', 'json');
         $response = [];
-        foreach ($requests as $i => $request) {
+
+        foreach ($data as $i => $gameDTO) {
             try {
-                $language = $this->languageRepository->findByName($request['language']);
-                $sport = $this->sportRepository->findByName($request['sport']);
-                $league = $this->leagueRepository->findBySportAndName($sport, $request['league']);
-                $team1 = $this->teamRepository->findBySportAndName($sport, $request['firstTeam']);
-                $team2 = $this->teamRepository->findBySportAndName($sport, $request['secondTeam']);
-                $startTime = new DateTimeImmutable();
-                $source = 'blabla.ru' . time();
+                $language = $this->languageRepository->findByName($gameDTO->language);
+                $sport = $this->sportRepository->findByName($gameDTO->sport);
+                $league = $this->leagueRepository->findBySportAndName($sport, $gameDTO->league);
+                $team1 = $this->teamRepository->findBySportAndName($sport, $gameDTO->firstTeam);
+                $team2 = $this->teamRepository->findBySportAndName($sport, $gameDTO->secondTeam);
+                $startTime = $gameDTO->startTime;
+                $source = $gameDTO->source;
 
                 $this->bus->dispatch(
                     new CreateBufferGameCommand(
