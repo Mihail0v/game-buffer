@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 namespace App\Domain\Game\Repository;
 
+use App\Domain\Game\Exception\NotFoundException;
 use App\Domain\Game\Game;
 use App\Domain\Game\GameBuffer;
 use App\Domain\Game\NormalizedGame;
-use App\Domain\Game\Exception\NotFoundException;
 use DateTime;
 use DateTimeImmutable as DateTimeImmutableAlias;
 use Doctrine\ODM\MongoDB\DocumentManager;
@@ -60,12 +60,13 @@ class GameRepository extends AbstractRepository
     }
 
     /**
-     * @param DateTimeImmutableAlias|null $dateTime
+     * @param DateTimeImmutableAlias|null $from
+     * @param DateTimeImmutableAlias|null $to
      * @param string|null $source
      * @return NormalizedGame
      * @throws NotFoundException
      */
-    public function getRandomGame(?DateTimeImmutableAlias $dateTime = null, ?string $source = null): NormalizedGame
+    public function getRandomGame(?DateTimeImmutableAlias $from = null, ?DateTimeImmutableAlias $to = null, ?string $source = null): NormalizedGame
     {
         $ab = $this->documentManager->createAggregationBuilder(Game::class);
         $classMetadata = $this->documentManager->getClassMetadata(Game::class);
@@ -77,11 +78,8 @@ class GameRepository extends AbstractRepository
         if ($source !== null) {
             $match->field('source')->equals($source);
         }
-        if ($dateTime !== null) {
-            $match->field('startTime')->range(
-                DateTime::createFromImmutable($dateTime)->modify('- 26 hours'),
-                DateTime::createFromImmutable($dateTime)->modify('+ 26 hours')
-            );
+        if ($from !== null && $to !== null) {
+            $match->field('startTime')->range($from, $to);
         }
 
         $ab->sample(1);

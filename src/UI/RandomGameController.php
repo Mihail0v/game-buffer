@@ -24,12 +24,15 @@ final class RandomGameController extends AbstractController
      */
     public function __invoke(GameRepository $gameRepository, SerializerInterface $serializer, Request $request): Response
     {
-        $startTime = $request->query->get('startTime');
+        $from = $request->query->get('from');
+        $to = $request->query->get('to');
         $source = $request->query->get('source');
+
         return new Response(
             $serializer->serialize(
                 $gameRepository->getRandomGame(
-                    $startTime === null ? null : DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $startTime),
+                    $from === null ? null : DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $from),
+                    $to === null ? null : DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $to),
                     $source
                 ),
                 'json'
