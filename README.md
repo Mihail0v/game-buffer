@@ -1,3 +1,7 @@
+Installation:
+```
+docker-compose up -d
+```
 Create buffer games
 ```
 curl --header "Content-Type: application/json"   --request POST   --data '[
