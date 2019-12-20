@@ -1,0 +1,52 @@
+version: '2.1'
+
+services:
+  nginx:
+    image: nginx:1.15-alpine
+    ports:
+      - "8800:80"
+    volumes:
+      - ./deploy/dev/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+      - .:/app
+    depends_on:
+      - php
+      - mongo
+  rmq:
+    image: rabbitmq:3-management
+    healthcheck:
+      test: "exit 0"
+    environment:
+      RABBITMQ_ERLANG_COOKIE: "DSFHURIVBXMAL"
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "guest"
+      RABBITMQ_DEFAULT_VHOST: "/"
+  php:
+    image: thecodingmachine/php:7.4-v3-fpm
+    volumes:
+      - .:/app
+    depends_on:
+      mongo:
+        condition: service_healthy
+    environment:
+      PHP_EXTENSION_AMQP: 1
+      PHP_EXTENSION_MONGODB: 1
+  consumer:
+    image: thecodingmachine/php:7.4-v3-fpm
+    command: bash -c "/app/bin/console doctrine:mongodb:fixtures:load -n && /app/bin/console messenger:consume async"
+    depends_on:
+      rmq:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    environment:
+      PHP_EXTENSION_AMQP: 1
+      PHP_EXTENSION_MONGODB: 1
+  mongo:
+    image: "vepo/mongo"
+    healthcheck:
+      test: "exit 0"
+    environment:
+      - AUTH=no
+      - ADMIN_USER=admin
+      - ADMIN_PASS=admin
+      - APPLICATION_DATABASE=symfony
